@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>harper.</title>
+<meta name="description" content="Saucer Games, a Roblox game studio">
+<style>
+  :root{--accent:#b388ff;--accent2:#ffffff;--text:#f2f2f5;--muted:#a9a9b3;--glass:rgba(0,0,0,.45);--line:rgba(255,255,255,.08);--chip:rgba(0,0,0,.35)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:#05060d;color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;overflow:hidden}
+  canvas#bg{position:fixed;inset:0;width:100%;height:100%;z-index:0}
+  .vignette{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at 50% 40%,transparent 35%,rgba(0,0,0,.75) 100%)}
+  /* enter screen */
+  #enter{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:rgba(0,0,0,.7);backdrop-filter:blur(14px);cursor:pointer;transition:opacity .7s ease,visibility .7s}
+  #enter.gone{opacity:0;visibility:hidden}
+  #enter span{font-size:15px;letter-spacing:.35em;text-transform:lowercase;color:var(--muted);animation:pulse 2.2s ease-in-out infinite}
+  @keyframes pulse{50%{opacity:.35;letter-spacing:.45em}}
+  /* card */
+  main{position:relative;z-index:2;height:100%;display:grid;place-items:center;padding:20px;overflow:auto}
+  .card{width:min(460px,100%);padding:30px 26px 22px;border-radius:24px;background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(16px);
+    box-shadow:0 30px 80px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.05);text-align:center;transform-style:preserve-3d;transition:transform .15s ease-out;opacity:0;translate:0 18px}
+  .card.show{animation:rise .9s cubic-bezier(.2,.8,.2,1) forwards}
+  @keyframes rise{to{opacity:1;translate:0 0}}
+  .avatar{position:relative;width:104px;height:104px;margin:0 auto 14px}
+  .avatar::before{content:"";position:absolute;inset:-4px;border-radius:50%;background:conic-gradient(#b388ff,#ffffff,#8f5cff,#ffffff,#b388ff);animation:spin 6s linear infinite;filter:blur(.5px)}
+  .avatar::after{content:"";position:absolute;inset:-14px;border-radius:50%;background:radial-gradient(circle,rgba(179,136,255,.35),transparent 70%);z-index:-1}
+  @keyframes spin{to{transform:rotate(1turn)}}
+  .avatar img,.avatar .ph{position:relative;width:100%;height:100%;border-radius:50%;border:4px solid #000;object-fit:cover;background:#000;display:grid;place-items:center}
+  .status{position:absolute;right:4px;bottom:6px;width:20px;height:20px;border-radius:50%;border:4px solid #000;background:#5c6378;z-index:2}
+  .status.online{background:#3ddc84}.status.idle{background:#f0b232}.status.dnd{background:#f23f43}
+  h1{font-size:30px;font-weight:800;letter-spacing:.3px;display:inline-flex;align-items:center;gap:8px;
+    background:linear-gradient(90deg,#ffffff,#b388ff,#ffffff,#8f5cff,#ffffff);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+    animation:shine 6s linear infinite;filter:drop-shadow(0 0 14px rgba(179,136,255,.45))}
+  @keyframes shine{to{background-position:300% 0}}
+  .handle{color:var(--muted);font-size:13.5px;margin-top:2px}
+  .badges{display:flex;justify-content:center;gap:6px;margin:12px 0 4px;flex-wrap:wrap}
+  .badge{position:relative;display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--chip);border:1px solid var(--line);color:#e8e8ee}
+  .badge svg{width:13px;height:13px}
+  .bio{margin:12px auto 4px;max-width:340px;color:#d3d8ee;min-height:1.5em}
+  .bio .cur{display:inline-block;width:2px;height:1em;background:var(--accent);vertical-align:-2px;margin-left:2px;animation:blink 1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .meta{display:flex;justify-content:center;gap:14px;color:var(--muted);font-size:12.5px;margin-top:8px;flex-wrap:wrap}
+  .meta span{display:inline-flex;align-items:center;gap:5px}
+  .meta svg{width:14px;height:14px;opacity:.8}
+  .socials{display:flex;justify-content:center;gap:10px;margin:18px 0 6px;flex-wrap:wrap}
+  .socials a{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:var(--chip);border:1px solid var(--line);color:#e6eaff;transition:.18s}
+  .socials a:hover{transform:translateY(-3px);background:rgba(0,0,0,.6);border-color:rgba(179,136,255,.55);color:#d4bcff;box-shadow:0 8px 24px rgba(179,136,255,.2)}
+  .socials svg{width:20px;height:20px}
+  .presence{display:none;align-items:center;gap:12px;text-align:left;margin-top:16px;padding:12px;border-radius:14px;background:var(--chip);border:1px solid var(--line)}
+  .presence.on{display:flex}
+  .presence img{width:48px;height:48px;border-radius:10px;object-fit:cover;background:#1a1e33}
+  .presence b{display:block;font-size:13.5px}.presence small{color:var(--muted);font-size:12px;display:block}
+  .projects{margin-top:16px;display:grid;gap:8px;text-align:left}
+  .proj{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:14px;background:var(--chip);border:1px solid var(--line);color:inherit;text-decoration:none;transition:.18s}
+  .proj:hover{border-color:rgba(139,123,255,.5);background:rgba(139,123,255,.09)}
+  .proj .ic{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;font-size:20px;background:linear-gradient(135deg,rgba(179,136,255,.25),rgba(139,123,255,.25));flex:none}
+  .proj b{font-size:14px;display:block}.proj small{color:var(--muted);font-size:12px}
+  .proj .go{margin-left:auto;color:var(--muted)}
+  .music{display:none;align-items:center;gap:10px;margin-top:14px;padding:9px 12px;border-radius:12px;background:var(--chip);border:1px solid var(--line);font-size:12.5px;color:var(--muted);text-align:left}
+  .music.on{display:flex}
+  .music button{width:30px;height:30px;border-radius:50%;border:0;background:var(--accent);color:#1a0b33;cursor:pointer;font-size:12px;flex:none}
+  .bars{display:flex;gap:2px;align-items:flex-end;height:14px;margin-left:auto}
+  .bars i{width:3px;background:var(--accent);border-radius:2px;height:4px}
+  .playing .bars i{animation:eq .9s ease-in-out infinite}.bars i:nth-child(2){animation-delay:.2s}.bars i:nth-child(3){animation-delay:.4s}.bars i:nth-child(4){animation-delay:.1s}
+  @keyframes eq{50%{height:14px}}
+  footer{margin-top:16px;font-size:11px;color:rgba(165,173,200,.55)}
+  .spark{position:fixed;z-index:30;pointer-events:none;width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);animation:fade .7s linear forwards}
+  @keyframes fade{to{opacity:0;transform:translateY(14px) scale(.2)}}
+  .toast{position:fixed;left:50%;bottom:28px;z-index:40;transform:translate(-50%,16px);background:rgba(0,0,0,.75);border:1px solid rgba(179,136,255,.45);color:#efe6ff;padding:9px 16px;border-radius:12px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;backdrop-filter:blur(10px)}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important}.card{opacity:1;translate:0}}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas><div class="vignette"></div>
+<div id="enter" role="button" tabindex="0"><span>click to enter</span></div>
+
+<div class="toast" id="toast" role="status"></div>
+<main>
+  <div class="card" id="card">
+    <div class="avatar"><div class="ph" id="ph"></div><span class="status" id="status"></span></div>
+    <h1 id="name"></h1>
+    <div class="handle" id="handle"></div>
+    <div class="badges" id="badges"></div>
+    <p class="bio"><span id="bio"></span><span class="cur"></span></p>
+    <div class="meta" id="meta"></div>
+    <div class="socials" id="socials"></div>
+    <div class="presence" id="presence"><img id="pImg" alt=""><div><b id="pTitle"></b><small id="pLine1"></small><small id="pLine2"></small></div></div>
+    <div class="music" id="music"><button id="play" aria-label="Play music">▶</button><span id="track"></span><div class="bars"><i></i><i></i><i></i><i></i></div><audio id="audio" loop></audio></div>
+    <div class="projects" id="projects"></div>
+  </div>
+</main>
+
+<script>
+/* ===================== EDIT YOUR INFO HERE ===================== */
+const PROFILE={
+  name:'harper.',
+  handle:'@saucertru',
+  avatar:'avatar.jpg',                      // image file or URL; '' shows the saucer logo
+  bio:[{t:'per aspera ad astra',en:'through hardships to the stars'},{t:'sic itur ad astra',en:'thus one goes to the stars (Virgil)'},{t:'dum spiro, spero',en:'while I breathe, I hope'},{t:'memento mori',en:'remember you will die'},{t:'tempus fugit',en:'time flies (Virgil)'},{t:'nil desperandum',en:'never despair (Horace)'}],   // t = shown text, en = translation shown on hover  // these lines type out one by one
+  location:'Australia',                     // '' to hide
+  badges:[],                                // e.g. {label:'Founder',icon:'crown'}
+  links:[                                   // use url to open a page, or copy to copy text (Discord has no username links)
+    {type:'discord',url:'https://discord.com/users/886513029208997908'},
+    {type:'roblox',url:'https://www.roblox.com/users/profile?username=want_v33'},
+    {type:'youtube',url:'https://www.youtube.com/@saucertru'},
+    {type:'tiktok',url:'https://www.tiktok.com/@saucertru'},
+    {type:'github',url:'https://github.com/saucertru'}],
+  projects:[],                              // e.g. {icon:'🎮',title:'Game',sub:'Roblox',url:'https://…'}
+  discordId:'886513029208997908',                             // your Discord user ID: shows live status (needs you to join discord.gg/lanyard)
+  music:{url:'',title:''},                  // an .mp3 URL to play after "click to enter"
+  accent:'#b388ff',accent2:'#ffffff',
+};
+/* =============================================================== */
+
+const $=s=>document.querySelector(s);
+const ICONS={
+ discord:'<path d="M19.6 5.6A16 16 0 0 0 15.7 4.4l-.5 1a14.7 14.7 0 0 0-6.4 0l-.5-1a16 16 0 0 0-3.9 1.2C1.9 9.4 1.2 13 1.5 16.6a16 16 0 0 0 4.8 2.4l1-1.6a10 10 0 0 1-1.6-.8l.4-.3a11.4 11.4 0 0 0 9.8 0l.4.3c-.5.3-1 .6-1.6.8l1 1.6a16 16 0 0 0 4.8-2.4c.4-4.2-.6-7.8-3-11ZM8.6 14.4c-1 0-1.7-.9-1.7-2s.8-2 1.7-2 1.8.9 1.7 2c0 1.1-.8 2-1.7 2Zm6.8 0c-1 0-1.7-.9-1.7-2s.8-2 1.7-2 1.8.9 1.7 2c0 1.1-.7 2-1.7 2Z" fill="currentColor"/>',
+ roblox:'<path d="M5.2 2 2 17.6 18.8 22 22 6.4 5.2 2Zm8.6 12.6-4-1 1-4 4 1-1 4Z" fill="currentColor"/>',
+ youtube:'<path d="M21.6 7.2a2.6 2.6 0 0 0-1.8-1.8C18.2 5 12 5 12 5s-6.2 0-7.8.4A2.6 2.6 0 0 0 2.4 7.2 27 27 0 0 0 2 12a27 27 0 0 0 .4 4.8 2.6 2.6 0 0 0 1.8 1.8C5.8 19 12 19 12 19s6.2 0 7.8-.4a2.6 2.6 0 0 0 1.8-1.8A27 27 0 0 0 22 12a27 27 0 0 0-.4-4.8ZM10 15V9l5.2 3L10 15Z" fill="currentColor"/>',
+ tiktok:'<path d="M16.6 2h-3.3v13.3a2.9 2.9 0 1 1-2.9-2.9c.3 0 .6 0 .9.1V9.1a6.3 6.3 0 1 0 5.3 6.2V8.6a8 8 0 0 0 4.4 1.3V6.6a4.5 4.5 0 0 1-4.4-4.6Z" fill="currentColor"/>',
+ x:'<path d="M17.8 3h3.1l-6.8 7.7L22 21h-6.2l-4.9-6.4L5.3 21H2.2l7.3-8.3L2 3h6.4l4.4 5.8L17.8 3Zm-1.1 16.2h1.7L7.4 4.7H5.6l11.1 14.5Z" fill="currentColor"/>',
+ github:'<path d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.4-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.6 2.4 1.1 3 .8.1-.6.4-1.1.6-1.3-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.2-.4-1.3.1-2.7 0 0 .8-.3 2.8 1a9.6 9.6 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .6 1.4.2 2.5.1 2.7.7.7 1 1.6 1 2.7 0 3.9-2.3 4.7-4.6 5 .4.3.7.9.7 1.9V21c0 .3.2.6.7.5A10 10 0 0 0 12 2Z" fill="currentColor"/>',
+ instagram:'<rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.3" fill="currentColor"/>',
+ email:'<rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="m4 7 8 6 8-6" fill="none" stroke="currentColor" stroke-width="2"/>',
+ link:'<path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+ crown:'<path d="m3 8 4 4 5-7 5 7 4-4-2 11H5L3 8Z" fill="#f5c84b"/>',
+ code:'<path d="m8 7-5 5 5 5M16 7l5 5-5 5" fill="none" stroke="#b388ff" stroke-width="2.4" stroke-linecap="round"/>',
+ check:'<circle cx="12" cy="12" r="10" fill="#5b8cff"/><path d="m7.5 12.5 3 3 6-6.5" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>',
+ star:'<path d="m12 2 3 7h7l-5.6 4.3L18.5 21 12 16.6 5.5 21l2.1-7.7L2 9h7l3-7Z" fill="#ff7ad9"/>',
+ pin:'<path d="M12 22s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12Z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="10" r="2.5" fill="currentColor"/>',
+ clock:'<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'};
+const svg=(k,extra='')=>`<svg viewBox="0 0 24 24" aria-hidden="true" ${extra}>${ICONS[k]||ICONS.link}</svg>`;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* fill the card */
+document.documentElement.style.setProperty('--accent',PROFILE.accent);document.documentElement.style.setProperty('--accent2',PROFILE.accent2);
+document.title=PROFILE.name;
+$('#name').textContent=PROFILE.name;$('#handle').textContent=PROFILE.handle;
+$('#ph').innerHTML=PROFILE.avatar?`<img src="${esc(PROFILE.avatar)}" alt="${esc(PROFILE.name)}">`:
+ `<svg viewBox="0 0 64 64" width="66" height="66" aria-hidden="true"><ellipse cx="32" cy="38" rx="27" ry="9" fill="${PROFILE.accent2}"/><ellipse cx="32" cy="35" rx="27" ry="7" fill="#c9cfff"/><path d="M19 34a13 13 0 0 1 26 0Z" fill="${PROFILE.accent}" opacity=".9"/><circle cx="18" cy="38" r="2" fill="#fff"/><circle cx="32" cy="40" r="2" fill="#fff"/><circle cx="46" cy="38" r="2" fill="#fff"/><path d="M24 47 20 58M40 47l4 11" stroke="${PROFILE.accent}" stroke-width="2" opacity=".5"/></svg>`;
+$('#badges').hidden=!PROFILE.badges.length;$('#badges').innerHTML=PROFILE.badges.map(b=>`<span class="badge">${svg(b.icon)}${esc(b.label)}</span>`).join('');
+$('#socials').innerHTML=PROFILE.links.map(l=>l.copy
+  ?`<a href="#" data-copy="${esc(l.copy)}" data-type="${esc(l.type)}" title="${esc(l.type)}: ${esc(l.copy)} (click to copy)" aria-label="Copy ${esc(l.type)} username ${esc(l.copy)}">${svg(l.type)}</a>`
+  :`<a href="${esc(l.url)}" target="_blank" rel="noopener" title="${esc(l.type)}" aria-label="${esc(l.type)}">${svg(l.type)}</a>`).join('');
+function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),2200)}
+$('#socials').addEventListener('click',async e=>{const a=e.target.closest('[data-copy]');if(!a)return;e.preventDefault();const v=a.dataset.copy,name=a.dataset.type[0].toUpperCase()+a.dataset.type.slice(1);
+  try{await navigator.clipboard.writeText(v);toast(`${name} username "${v}" copied`)}catch{toast(`${name}: ${v}`)}});
+$('#projects').innerHTML=PROFILE.projects.map(p=>`<a class="proj" href="${esc(p.url)}" target="_blank" rel="noopener"><span class="ic">${esc(p.icon)}</span><span><b>${esc(p.title)}</b><small>${esc(p.sub)}</small></span><span class="go">↗</span></a>`).join('');
+const metaClock=document.createElement('span');
+$('#meta').innerHTML=(PROFILE.location?`<span>${svg('pin')}${esc(PROFILE.location)}</span>`:'');
+metaClock.innerHTML=svg('clock')+'<em style="font-style:normal"></em>';$('#meta').append(metaClock);
+const tickClock=()=>{metaClock.querySelector('em').textContent=new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+' local'};tickClock();setInterval(tickClock,30000);
+$('#projects').hidden=!PROFILE.projects.length;
+
+/* typewriter bio */
+(async function type(){const el=$('#bio');const wait=ms=>new Promise(r=>setTimeout(r,ms));let i=0;
+  for(;;){const item=PROFILE.bio[i++%PROFILE.bio.length];const line=[...(typeof item==='string'?item:item.t)];el.parentElement.title=item.en||'';for(let k=1;k<=line.length;k++){el.textContent=line.slice(0,k).join('');await wait(65)}
+    await wait(1800);if(PROFILE.bio.length<2)return;for(let k=line.length;k>=0;k--){el.textContent=line.slice(0,k).join('');await wait(25)}await wait(300)}})();
+
+/* deep starfield background */
+const cv=$('#bg'),g=cv.getContext('2d');let W,H,stars=[],dust=[],shoot=[];const dpr=Math.min(2,devicePixelRatio||1);
+const TINTS=['255,255,255','255,255,255','255,255,255','200,215,255','255,235,210','190,255,240','230,210,255'];
+function size(){W=cv.width=innerWidth*dpr;H=cv.height=innerHeight*dpr;const area=W*H/(dpr*dpr);
+  stars=Array.from({length:Math.round(area/1400)},()=>{const z=Math.random()**2.2;return{x:Math.random()*W,y:Math.random()*H,z,r:(.35+z*1.6)*dpr,t:Math.random()*6.3,sp:.6+Math.random()*2.2,c:TINTS[Math.random()*TINTS.length|0]}});
+  // a diagonal milky-way band of faint dust
+  dust=Array.from({length:Math.round(area/600)},()=>{const u=Math.random(),off=(Math.random()+Math.random()+Math.random()-1.5)*.16;
+    return{x:u*W,y:(.85-u*.7+off)*H,r:Math.random()*.9*dpr+.2,a:Math.random()*.35+.05}})}
+size();addEventListener('resize',size);
+let mx=0,my=0;addEventListener('pointermove',e=>{mx=e.clientX/innerWidth-.5;my=e.clientY/innerHeight-.5});
+setInterval(()=>{if(Math.random()<.55)shoot.push({x:Math.random()*W*.8+W*.1,y:Math.random()*H*.45,vx:-(6+Math.random()*6)*dpr,vy:(3+Math.random()*3)*dpr,life:1})},1700);
+function frame(t){g.clearRect(0,0,W,H);
+  // nebula glow
+  for(const[cx,cy,r,col]of[[.25,.3,.55,'110,60,200'],[.78,.68,.5,'40,120,170'],[.5,.5,.35,'200,80,170']]){
+    const gr=g.createRadialGradient(W*cx,H*cy,0,W*cx,H*cy,Math.max(W,H)*r);gr.addColorStop(0,`rgba(${col},.16)`);gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.fillRect(0,0,W,H)}
+  // milky way dust
+  for(const d of dust){g.fillStyle=`rgba(220,225,255,${d.a})`;g.fillRect(d.x+mx*6*dpr,d.y+my*6*dpr,d.r,d.r)}
+  // stars with twinkle and parallax
+  for(const s of stars){const tw=.55+.45*Math.sin(t/1000*s.sp+s.t);const x=s.x+mx*40*s.z*dpr,y=s.y+my*40*s.z*dpr;
+    g.fillStyle=`rgba(${s.c},${(.35+.65*s.z)*tw})`;g.beginPath();g.arc(x,y,s.r,0,6.283);g.fill();
+    if(s.z>.55){g.strokeStyle=`rgba(${s.c},${.25*tw})`;g.lineWidth=.6*dpr;const L=s.r*5*tw;g.beginPath();g.moveTo(x-L,y);g.lineTo(x+L,y);g.moveTo(x,y-L);g.lineTo(x,y+L);g.stroke()}}
+  // shooting stars
+  for(const p of shoot){p.x+=p.vx;p.y+=p.vy;p.life-=.018;const tl=g.createLinearGradient(p.x,p.y,p.x-p.vx*12,p.y-p.vy*12);
+    tl.addColorStop(0,`rgba(255,255,255,${p.life})`);tl.addColorStop(1,'rgba(255,255,255,0)');g.strokeStyle=tl;g.lineWidth=1.6*dpr;g.beginPath();g.moveTo(p.x,p.y);g.lineTo(p.x-p.vx*12,p.y-p.vy*12);g.stroke()}
+  shoot=shoot.filter(p=>p.life>0);requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+
+/* card tilt + cursor sparkles */
+const card=$('#card');
+addEventListener('pointermove',e=>{const r=card.getBoundingClientRect();const x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;
+  card.style.transform=`perspective(900px) rotateY(${x*8}deg) rotateX(${-y*8}deg)`;
+  if(Math.random()<.35){const s=document.createElement('i');s.className='spark';s.style.left=e.clientX-3+'px';s.style.top=e.clientY-3+'px';document.body.append(s);setTimeout(()=>s.remove(),700)}});
+addEventListener('pointerleave',()=>card.style.transform='');
+
+/* music */
+const audio=$('#audio');
+if(PROFILE.music.url){$('#music').classList.add('on');audio.src=PROFILE.music.url;$('#track').textContent=PROFILE.music.title||'Now playing';audio.volume=.35;
+  $('#play').onclick=()=>audio.paused?audio.play().catch(()=>{}):audio.pause();
+  audio.onplay=()=>{$('#play').textContent='❚❚';$('#music').classList.add('playing')};audio.onpause=()=>{$('#play').textContent='▶';$('#music').classList.remove('playing')}}
+
+/* enter screen */
+function enter(){$('#enter').classList.add('gone');card.classList.add('show');if(PROFILE.music.url)audio.play().catch(()=>{})}
+$('#enter').onclick=enter;$('#enter').onkeydown=e=>{if(e.key==='Enter'||e.key===' ')enter()};
+
+/* live Discord status via Lanyard (optional) */
+async function presence(){if(!PROFILE.discordId)return;try{const r=await fetch(`https://api.lanyard.rest/v1/users/${PROFILE.discordId}`);const j=await r.json();if(!j.success)return;const d=j.data;
+  $('#status').className='status '+d.discord_status;
+  const act=(d.activities||[]).find(a=>a.type!==4);
+  if(d.listening_to_spotify&&d.spotify){$('#pImg').src=d.spotify.album_art_url;$('#pTitle').textContent=d.spotify.song;$('#pLine1').textContent='by '+d.spotify.artist;$('#pLine2').textContent='Listening on Spotify';$('#presence').classList.add('on')}
+  else if(act){const img=act.assets&&act.assets.large_image;$('#pImg').src=img?(img.startsWith('mp:')?'https://media.discordapp.net/'+img.slice(3):`https://cdn.discordapp.com/app-assets/${act.application_id}/${img}.png`):'';
+    $('#pTitle').textContent=act.name;$('#pLine1').textContent=act.details||'';$('#pLine2').textContent=act.state||'';$('#presence').classList.add('on')}
+  else $('#presence').classList.remove('on')}catch(e){}}
+presence();setInterval(presence,30000);
+</script>
+</body>
+</html>
