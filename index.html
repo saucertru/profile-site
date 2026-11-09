@@ -4,7 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>harper.</title>
-<meta name="description" content="Saucer Games, a Roblox game studio">
+<meta name="theme-color" content="#b388ff">
+<meta property="og:type" content="website">
+<meta property="og:title" content="harper.">
+<meta property="og:site_name" content="@saucertru">
+<meta property="og:image" content="https://saucertru.vercel.app/avatar.jpg">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="avatar.jpg">
 <style>
   :root{--accent:#b388ff;--accent2:#ffffff;--text:#f2f2f5;--muted:#a9a9b3;--glass:rgba(0,0,0,.45);--line:rgba(255,255,255,.08);--chip:rgba(0,0,0,.35)}
   *{box-sizing:border-box;margin:0;padding:0}
@@ -110,7 +116,7 @@ const PROFILE={
     {type:'github',url:'https://github.com/saucertru'}],
   projects:[],                              // e.g. {icon:'🎮',title:'Game',sub:'Roblox',url:'https://…'}
   discordId:'886513029208997908',                             // your Discord user ID: shows live status (needs you to join discord.gg/lanyard)
-  music:{url:'',title:''},                  // an .mp3 URL to play after "click to enter"
+  music:{url:'music.mp3',title:'Let Go ft. Veronika Redd',artist:'Ark Patrol'},  // music.mp3 must sit next to index.html
   accent:'#b388ff',accent2:'#ffffff',
 };
 /* =============================================================== */
@@ -196,8 +202,9 @@ addEventListener('pointerleave',()=>card.style.transform='');
 
 /* music */
 const audio=$('#audio');
-if(PROFILE.music.url){$('#music').classList.add('on');audio.src=PROFILE.music.url;$('#track').textContent=PROFILE.music.title||'Now playing';audio.volume=.35;
+if(PROFILE.music.url){$('#music').classList.add('on');audio.src=PROFILE.music.url;$('#track').innerHTML=`<b style="display:block;color:#f2f2f5;font-weight:600">${esc(PROFILE.music.title||'Now playing')}</b>${esc(PROFILE.music.artist||'')}`;audio.volume=.35;
   $('#play').onclick=()=>audio.paused?audio.play().catch(()=>{}):audio.pause();
+  audio.onerror=()=>$('#music').classList.remove('on');
   audio.onplay=()=>{$('#play').textContent='❚❚';$('#music').classList.add('playing')};audio.onpause=()=>{$('#play').textContent='▶';$('#music').classList.remove('playing')}}
 
 /* enter screen */
