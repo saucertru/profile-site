@@ -50,6 +50,7 @@
   .meta{display:flex;justify-content:center;gap:14px;color:var(--muted);font-size:12.5px;margin-top:8px;flex-wrap:wrap}
   .meta span{display:inline-flex;align-items:center;gap:5px}
   .meta svg{width:14px;height:14px;opacity:.8}
+  #views[hidden]{display:none}
   .socials{display:flex;justify-content:center;gap:10px;margin:18px 0 6px;flex-wrap:wrap}
   .socials a{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:var(--chip);border:1px solid var(--line);color:#e6eaff;transition:.18s}
   .socials a:hover{transform:translateY(-3px);background:rgba(0,0,0,.6);border-color:rgba(179,136,255,.55);color:#d4bcff;box-shadow:0 8px 24px rgba(179,136,255,.2)}
@@ -64,7 +65,8 @@
   .proj .ic{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;font-size:20px;background:linear-gradient(135deg,rgba(179,136,255,.25),rgba(139,123,255,.25));flex:none}
   .proj b{font-size:14px;display:block}.proj small{color:var(--muted);font-size:12px}
   .proj .go{margin-left:auto;color:var(--muted)}
-  .music{display:none;align-items:center;gap:10px;margin-top:14px;padding:9px 12px;border-radius:12px;background:var(--chip);border:1px solid var(--line);font-size:12.5px;color:var(--muted);text-align:left}
+  .music{position:fixed;top:16px;left:16px;z-index:15;display:none;align-items:center;gap:10px;padding:8px 14px 8px 8px;border-radius:14px;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(10px);font-size:12px;color:var(--muted);text-align:left;max-width:min(320px,calc(100vw - 32px));opacity:0;transition:opacity .6s}
+  .music.shown{opacity:1}
   .music.on{display:flex}
   .music button{width:30px;height:30px;border-radius:50%;border:0;background:var(--accent);color:#1a0b33;cursor:pointer;font-size:12px;flex:none}
   .bars{display:flex;gap:2px;align-items:flex-end;height:14px;margin-left:auto}
@@ -84,6 +86,7 @@
 <div id="enter" role="button" tabindex="0"><span>click to enter</span></div>
 
 <div class="toast" id="toast" role="status"></div>
+<div class="music" id="music"><button id="play" aria-label="Play music">▶</button><span id="track"></span><div class="bars"><i></i><i></i><i></i><i></i></div><audio id="audio" loop></audio></div>
 <main>
   <div class="card" id="card">
     <div class="avatar"><div class="ph" id="ph"></div><span class="status" id="status"></span></div>
@@ -94,7 +97,6 @@
     <div class="meta" id="meta"></div>
     <div class="socials" id="socials"></div>
     <div class="presence" id="presence"><img id="pImg" alt=""><div><b id="pTitle"></b><small id="pLine1"></small><small id="pLine2"></small></div></div>
-    <div class="music" id="music"><button id="play" aria-label="Play music">▶</button><span id="track"></span><div class="bars"><i></i><i></i><i></i><i></i></div><audio id="audio" loop></audio></div>
     <div class="projects" id="projects"></div>
   </div>
 </main>
@@ -123,6 +125,7 @@ const PROFILE={
 
 const $=s=>document.querySelector(s);
 const ICONS={
+ eye:'<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/>',
  discord:'<path d="M19.6 5.6A16 16 0 0 0 15.7 4.4l-.5 1a14.7 14.7 0 0 0-6.4 0l-.5-1a16 16 0 0 0-3.9 1.2C1.9 9.4 1.2 13 1.5 16.6a16 16 0 0 0 4.8 2.4l1-1.6a10 10 0 0 1-1.6-.8l.4-.3a11.4 11.4 0 0 0 9.8 0l.4.3c-.5.3-1 .6-1.6.8l1 1.6a16 16 0 0 0 4.8-2.4c.4-4.2-.6-7.8-3-11ZM8.6 14.4c-1 0-1.7-.9-1.7-2s.8-2 1.7-2 1.8.9 1.7 2c0 1.1-.8 2-1.7 2Zm6.8 0c-1 0-1.7-.9-1.7-2s.8-2 1.7-2 1.8.9 1.7 2c0 1.1-.7 2-1.7 2Z" fill="currentColor"/>',
  roblox:'<path d="M5.2 2 2 17.6 18.8 22 22 6.4 5.2 2Zm8.6 12.6-4-1 1-4 4 1-1 4Z" fill="currentColor"/>',
  youtube:'<path d="M21.6 7.2a2.6 2.6 0 0 0-1.8-1.8C18.2 5 12 5 12 5s-6.2 0-7.8.4A2.6 2.6 0 0 0 2.4 7.2 27 27 0 0 0 2 12a27 27 0 0 0 .4 4.8 2.6 2.6 0 0 0 1.8 1.8C5.8 19 12 19 12 19s6.2 0 7.8-.4a2.6 2.6 0 0 0 1.8-1.8A27 27 0 0 0 22 12a27 27 0 0 0-.4-4.8ZM10 15V9l5.2 3L10 15Z" fill="currentColor"/>',
@@ -158,6 +161,7 @@ $('#projects').innerHTML=PROFILE.projects.map(p=>`<a class="proj" href="${esc(p.
 const metaClock=document.createElement('span');
 $('#meta').innerHTML=(PROFILE.location?`<span>${svg('pin')}${esc(PROFILE.location)}</span>`:'');
 metaClock.innerHTML=svg('clock')+'<em style="font-style:normal"></em>';$('#meta').append(metaClock);
+const views=document.createElement('span');views.id='views';views.hidden=true;views.title='Profile views';views.innerHTML=svg('eye')+'<em style="font-style:normal"></em>';$('#meta').append(views);
 const tickClock=()=>{metaClock.querySelector('em').textContent=new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+' local'};tickClock();setInterval(tickClock,30000);
 $('#projects').hidden=!PROFILE.projects.length;
 
@@ -208,8 +212,15 @@ if(PROFILE.music.url){$('#music').classList.add('on');audio.src=PROFILE.music.ur
   audio.onplay=()=>{$('#play').textContent='❚❚';$('#music').classList.add('playing')};audio.onpause=()=>{$('#play').textContent='▶';$('#music').classList.remove('playing')}}
 
 /* enter screen */
-function enter(){$('#enter').classList.add('gone');card.classList.add('show');if(PROFILE.music.url)audio.play().catch(()=>{})}
+function enter(){$('#enter').classList.add('gone');card.classList.add('show');$('#music').classList.add('shown');if(PROFILE.music.url)audio.play().catch(()=>{})}
 $('#enter').onclick=enter;$('#enter').onkeydown=e=>{if(e.key==='Enter'||e.key===' ')enter()};
+
+/* profile views (counted once per visitor per day, stored by /api/views) */
+(async()=>{let seen=0;try{seen=+localStorage.getItem('pv_seen')||0}catch{}
+  const fresh=Date.now()-seen>864e5;
+  try{const r=await fetch('/api/views',{method:fresh?'POST':'GET',cache:'no-store'});if(!r.ok)return;const j=await r.json();if(typeof j.views!=='number')return;
+    if(fresh)try{localStorage.setItem('pv_seen',Date.now())}catch{}
+    views.querySelector('em').textContent=j.views.toLocaleString()+(j.views===1?' view':' views');views.hidden=false}catch{}})();
 
 /* live Discord status via Lanyard (optional) */
 async function presence(){if(!PROFILE.discordId)return;try{const r=await fetch(`https://api.lanyard.rest/v1/users/${PROFILE.discordId}`);const j=await r.json();if(!j.success)return;const d=j.data;
