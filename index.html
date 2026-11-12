@@ -51,10 +51,11 @@
   .meta span{display:inline-flex;align-items:center;gap:5px}
   .meta svg{width:14px;height:14px;opacity:.8}
   #views[hidden]{display:none}
-  .socials{display:flex;justify-content:center;gap:10px;margin:18px 0 6px;flex-wrap:wrap}
-  .socials a{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:var(--chip);border:1px solid var(--line);color:#e6eaff;transition:.18s}
-  .socials a:hover{transform:translateY(-3px);background:rgba(0,0,0,.6);border-color:rgba(179,136,255,.55);color:#d4bcff;box-shadow:0 8px 24px rgba(179,136,255,.2)}
-  .socials svg{width:20px;height:20px}
+  .socials{display:flex;justify-content:center;gap:16px;margin:18px 0 6px;flex-wrap:wrap}
+  .socials a{width:44px;height:44px;display:grid;place-items:center;border-radius:50%;transition:transform .2s ease,filter .2s ease;filter:drop-shadow(0 0 6px rgba(179,136,255,.35)) drop-shadow(0 2px 4px rgba(0,0,0,.6))}
+  .socials a:hover{transform:translateY(-3px) scale(1.12);filter:drop-shadow(0 0 12px rgba(179,136,255,.75)) drop-shadow(0 2px 4px rgba(0,0,0,.6))}
+  .socials svg{width:32px;height:32px}
+  .socials svg path,.socials svg rect,.socials svg circle{fill:url(#liquid)}
   .presence{display:none;align-items:center;gap:12px;text-align:left;margin-top:16px;padding:12px;border-radius:14px;background:var(--chip);border:1px solid var(--line)}
   .presence.on{display:flex}
   .presence img{width:48px;height:48px;border-radius:10px;object-fit:cover;background:#1a1e33}
@@ -82,6 +83,11 @@
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="liquid" x1="0" y1="0" x2="1" y2=".35" spreadMethod="reflect">
+    <stop offset="0" stop-color="#ffffff"/><stop offset=".3" stop-color="#b388ff"/><stop offset=".55" stop-color="#ffffff"/><stop offset=".8" stop-color="#8f5cff"/><stop offset="1" stop-color="#ffffff"/>
+    <animateTransform attributeName="gradientTransform" type="translate" from="0 0" to="2 0" dur="6s" repeatCount="indefinite"/>
+  </linearGradient></defs></svg>
 <canvas id="bg"></canvas><div class="vignette"></div>
 <div id="enter" role="button" tabindex="0"><span>click to enter</span></div>
 
